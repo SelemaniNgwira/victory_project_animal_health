@@ -1,6 +1,9 @@
 ---
 title: "Analysis"
-output: html_document
+output:
+  html_document:
+    df_print: paged
+
 ---
 
 ```{r , results='hold'}
@@ -12,7 +15,7 @@ knitr::opts_chunk$set(echo = TRUE, results = "hold")
 if(!require(pacman)) install.packages("pacman")
 p_load(
   rio, tidyverse, janitor, here, epitools, epikit, visdat, inspectdf, gtsummary, 
-  tmaptools, tmap, sf, flextable
+  tmaptools, tmap, sf, flextable, officer
 )
 
 
@@ -26,6 +29,8 @@ amu_data<-clean_names(amu_data)
 # changing the characters to factors 
 amu_data<- amu_data %>% 
   mutate(across(where(is.character), as.factor))
+
+options(flextable.print = "full")
 
 
 ```
@@ -154,13 +159,92 @@ save_as_docx(table1_livestock, path = here("output/table_2.docx"))
 
 
 ```{r}
+options(flextable.shadow = FALSE)
+
 # subsetting antimicrobial use data set
 antimicrobial <- amu_data %>% 
-               select
+    select(41: 81) %>% 
+    select(-matches(("other_specify|specify"))) %>%  # deselect all the variables contain others and specify.
+    select(-c(where_do_you_purchase_antimicrobials, 
+           how_do_you_administer_antimicrobials_to_your_livestock_select_all_that_apply, 
+          if_yes_can_you_show_us_the_bottles_packages_for_verification_url, 
+          if_yes_can_you_show_us_the_bottles_packages_for_verification, 
+      can_you_provide_the_names_of_antimicrobials_currently_used_on_your_farm,
+      how_do_you_decide_which_antimicrobial_to_use,
+      what_are_the_main_reasons_for_using_antimicrobials, 
+      if_no_explain_why_72, 
+      how_do_you_store_antimicrobials_on_your_farm, 
+      how_do_you_dispose_of_unused_or_expired_antimicrobials)
+      )  
+
+
+
+# Convert all variables from 0="No", 1= "Yes"
+
+antimicrobial<- antimicrobial %>% 
+   mutate(across(-c(1,9,16), ~ ifelse(. == 1, "Yes", "No")))
+
+antimicrobial<-as_tibble(antimicrobial)
+
+# change the data structure
+
+table3<-antimicrobial %>% 
+  pivot_longer(
+    cols = 1:21
+  ) %>% 
+  filter(value=="Yes"|value=="No") %>% 
+  group_by(name, value) %>%
+  count(value) %>%
+  pivot_wider(
+    names_from = value,
+  values_from = n
+  )
+
+# replacing NA with 0
+table3[is.na(table3)]<-0
+
+
+
+# Creating a table on the Antimicrobial use practices
+table3<-table3 %>% 
+  mutate(total=round(
+    Yes+No
+  ), 
+  Yes=round(
+    Yes/total*100, 3
+  ), 
+  No=round(
+    No/total*100, 3
+  )) %>% 
+  rename(
+    "Variable"=name
+  ) %>% 
+  select(
+    Variable, 
+    Yes, 
+    No
+  )
+
+
+
+# replacing _ with space in the column variable
+ table3$Variable <- gsub("_", " ", table3$Variable) 
+  
+
+#save the table as an excel 
+
+export(table3, "output/table3.xlsx")
 
 
 
 
 ```
 
+
+
+```{r}
+
+
+
+```
 
