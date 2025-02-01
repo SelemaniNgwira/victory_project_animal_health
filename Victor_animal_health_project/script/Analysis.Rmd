@@ -1,0 +1,166 @@
+---
+title: "Analysis"
+output: html_document
+---
+
+```{r , results='hold'}
+# setting the global setting of the chuck within this rmarkdown
+knitr::opts_chunk$set(echo = TRUE, results = "hold")
+
+
+# loading package required for this analysis 
+if(!require(pacman)) install.packages("pacman")
+p_load(
+  rio, tidyverse, janitor, here, epitools, epikit, visdat, inspectdf, gtsummary, 
+  tmaptools, tmap, sf, flextable
+)
+
+
+
+# loading data sets.
+amu_data<-import(here("data/AMU.xlsx"))
+
+# clean the variable names to lower cases
+amu_data<-clean_names(amu_data)
+
+# changing the characters to factors 
+amu_data<- amu_data %>% 
+  mutate(across(where(is.character), as.factor))
+
+
+```
+
+# descripitive stasticts for demographic variables 
+
+```{r}
+# sub setting demographic variables.
+demo_data<-amu_data %>% 
+  select(age_of_the_participant,
+        gender_of_the_participant, 
+        marital_status_of_the_participant, 
+        level_of_education_of_the_participant,
+        role_of_the_participant_in_livestock_production,
+        # village, # remove village because it not clean 
+        # ta, # remove ta variable because the values are not clean
+        district) %>% 
+  mutate(age_group=age_categories(
+        age_of_the_participant, 
+        breakers = c(0,35, 45, 55)
+  )) %>% 
+  select(-age_of_the_participant) #
+
+# re-arranging the variables
+demo_data<- demo_data %>% 
+  select(age_group, everything())
+
+# summary of the demographic variables
+summary(demo_data)
+
+# creating freq. table of the demographic variables
+demo_table<-demo_data %>% 
+  tbl_summary()
+
+
+# converting the gt object to flex table object
+
+demo_table <-  as_flex_table(demo_table) 
+               
+# saving the demographic table
+
+save_as_docx(demo_table, path = here("output/demographics_table.docx"))
+
+
+```
+
+# Descriptive stat. farm characteristics
+
+```{r}
+# creating a sub set of livestock raise in the farm
+livestock_raise<-amu_data %>% 
+  dplyr::select(c(24: 28)) %>% 
+  rename(
+    "Poultry"= type_of_livestock_raised_poultry_layers_broilers_indigenous, 
+    "Dairy_cattle"= type_of_livestock_raised_dairy_cattle, 
+    "Beef_Cattle"=type_of_livestock_raised_beef_cattle, 
+    "Pigs"=type_of_livestock_raised_pigs, 
+    "Goats"=type_of_livestock_raised_goats
+  )
+
+# creating a freq. table of livestock keep at the farm
+
+tabel_livestoc_raise<-livestock_raise %>% 
+  pivot_longer(cols = 1:5, 
+               names_to = "Category") %>% # changing the data structure
+  filter(value == 1) %>% # filtering out those that responsed or tick 
+  group_by(Category) %>% # grouping the data by category
+  summarise(n = n()) %>% # summaring the data by counts of category
+  mutate(Percentage = round(n / sum(n) * 100, 3)) # calculating percentage
+
+# sub setting number of livestock keep on the farm
+number_livestoct <- amu_data %>% 
+        dplyr::select( c(31:35))
+
+
+
+# creating a table on the number of liverstock keep at the farm
+table_number_livestoct<-number_livestoct %>% 
+  pivot_longer(
+    cols = 1:5, 
+    names_to = "Category"
+  ) %>% 
+  filter(value>=1) %>% 
+  group_by(Category) %>% 
+  summarise(n=sum(value)) %>% 
+  mutate(Percentage=round(
+    n/sum(n)*100, 3
+  ))
+
+
+# subsetting varaible number 37 to 39
+table1_livestock<-amu_data %>% 
+  select(c(37:39))
+
+# creating a table on number of years in expereience of keeoing livestock
+table1_livestock<- table1_livestock %>% 
+                       tbl_summary()
+
+# converting the livestock table to flextable object
+
+table1_livestock<-as_flex_table(table1_livestock)
+
+# mergeing the two first tables 
+merge_table<-union_all(
+ tabel_livestoc_raise, 
+ table_number_livestoct
+)
+
+# converting the table to flextable object
+
+table_livestock_2<-as_flextable(merge_table)
+
+
+# saving the tables 
+
+## saving table 1 
+save_as_docx(table_livestock_2, path = here("output/table.docx"))
+
+save_as_docx(table1_livestock, path = here("output/table_2.docx"))
+
+
+```
+
+
+# Antimicrobial use practices
+
+
+```{r}
+# subsetting antimicrobial use data set
+antimicrobial <- amu_data %>% 
+               select
+
+
+
+
+```
+
+
