@@ -19,6 +19,12 @@ p_load(
 )
 
 
+# packages for qauilative analysis in R
+
+p_load(
+  tm, tidytext, wordcloud, plotly
+)
+
 
 # loading data sets.
 amu_data<-import(here("data/AMU.xlsx"))
@@ -31,6 +37,7 @@ amu_data<- amu_data %>%
   mutate(across(where(is.character), as.factor))
 
 options(flextable.print = "full")
+
 
 
 ```
@@ -240,11 +247,369 @@ export(table3, "output/table3.xlsx")
 
 ```
 
-
+# Disease management practices
 
 ```{r}
+
+disease_management<-amu_data %>% 
+                       select(
+                        84:98  )
+
+disease_management<- disease_management %>% 
+  mutate(across(where(is.factor), as.character))
+
+
+```
+
+## Plotting disease in poulty 
+
+```{r}
+
+poultry_disease<-  disease_management %>% 
+              unnest_tokens( poultry_disease,
+                diseases_of_poultry_currently_on_the_farm) %>% 
+                select(poultry_disease) %>% 
+        cross_join(stop_words)
+
+
+poultry_disease<-poultry_disease %>% 
+                drop_na(poultry_disease)
+
+
+count_words <- poultry_disease %>% 
+      count(poultry_disease, sort = T)
+
+
+
+
+
+# plotting a word cloud for poultry 
+
+output_path <- here("output", "Poultry_Disease.png")
+
+# **Save Word Cloud as PNG**
+png(output_path, width = 800, height = 600)
+  
+
+
+wordcloud(words = count_words$poultry_disease, 
+          freq = count_words$n, 
+          min.freq = 1,          # Minimum frequency of words to be included
+          max.words = 100,       # Maximum words to be displayed
+          random.order = FALSE,  # Arrange words based on frequency
+          rot.per = 0.35,    # Proportion of words rotated (35% at 90 degrees)
+          colors = brewer.pal(8, "Dark2")) # Color palette
+
+dev.off() 
+
+```
+
+## Disease in Dailry cattle
+
+```{r}
+
+Dairy_disease<-  disease_management %>% 
+              unnest_tokens(Dairy_disease,
+                diseases_of_dairy_cattle_currently_on_the_farm) %>% 
+                select(Dairy_disease) %>% 
+        cross_join(stop_words)
+
+
+Dairy_disease<-Dairy_disease %>% 
+                drop_na(Dairy_disease)
+
+
+count_words <- Dairy_disease %>% 
+      count(Dairy_disease, sort = T)
+
+
+
+
+
+# plotting a word cloud for poultry 
+
+output_path <- here("output", "Dairy_Disease.png")
+
+# **Save Word Cloud as PNG**
+png(output_path, width = 800, height = 600)
+  
+
+
+wordcloud(words = count_words$Dairy_disease, 
+          freq = count_words$n, 
+          min.freq = 1,          # Minimum frequency of words to be included
+          max.words = 100,       # Maximum words to be displayed
+          random.order = FALSE,  # Arrange words based on frequency
+          rot.per = 0.35,    # Proportion of words rotated (35% at 90 degrees)
+          colors = brewer.pal(8, "Dark2")) # Color palette
+
+dev.off() 
 
 
 
 ```
+
+### Disease of Beef cattle 
+
+```{r}
+
+Beef_disease<-disease_management %>% 
+              unnest_tokens(Beef_disease,
+                diseases_of_beef_cattle_currently_on_the_farm) %>% 
+                select(Beef_disease) %>% 
+        anti_join(stop_words)
+
+
+Beef_disease<-Beef_disease %>% 
+                drop_na(Beef_disease)
+
+
+count_words <- Beef_disease %>% 
+      count(Beef_disease, sort = T)
+
+
+# plotting a word cloud for poultry 
+
+output_path <- here("output", "Beef_Disease.png")
+
+# **Save Word Cloud as PNG**
+png(output_path, width = 600, height = 400)
+  
+
+
+wordcloud(words = count_words$Beef_disease, 
+          freq = count_words$n, 
+          min.freq = 1,          # Minimum frequency of words to be included
+          max.words = 100,       # Maximum words to be displayed
+          random.order = FALSE,  # Arrange words based on frequency
+          rot.per = 0.35,    # Proportion of words rotated (35% at 90 degrees)
+          colors = brewer.pal(8, "Dark2")) # Color palette
+
+dev.off() 
+
+
+
+```
+
+## Disease in Pigs 
+
+```{r}
+
+Pig_disease<-disease_management %>% 
+              unnest_tokens(Pig_disease,
+                diseases_of_pigs_currently_on_the_farm) %>% 
+                select(Pig_disease)%>% 
+        cross_join(stop_words)
+
+
+Pig_disease<-Pig_disease %>% 
+                drop_na(Pig_disease)
+
+
+count_words <- Pig_disease %>% 
+      count(Pig_disease, sort = T)
+
+
+# plotting a word cloud for poultry 
+
+output_path <- here("output", "Pig_disease.png")
+
+# **Save Word Cloud as PNG**
+png(output_path, width = 600, height = 400)
+  
+
+
+wordcloud(words = count_words$Pig_disease, 
+          freq = count_words$n, 
+          min.freq = 1,          # Minimum frequency of words to be included
+          max.words = 100,       # Maximum words to be displayed
+          random.order = FALSE,  # Arrange words based on frequency
+          rot.per = 0.35,    # Proportion of words rotated (35% at 90 degrees)
+          colors = brewer.pal(8, "Dark2")) # Color palette
+
+dev.off() 
+
+
+```
+
+## Goat Disease 
+
+```{r}
+
+Goat_disease<-disease_management %>% 
+              unnest_tokens(Goat_disease,
+                diseases_of_goats_currently_on_the_farm) %>% 
+                select(Goat_disease)%>% 
+        cross_join(stop_words)
+
+
+Goat_disease<-Goat_disease %>% 
+                drop_na(Goat_disease)
+
+
+count_words <- Goat_disease %>% 
+      count(Goat_disease, sort = T)
+
+
+# plotting a word cloud for poultry 
+
+output_path <- here("output", "Goat_disease.png")
+
+# **Save Word Cloud as PNG**
+png(output_path, width = 8, height = 5, units = "cm", res = 300)
+
+wordcloud(words = count_words$Goat_disease, 
+          freq = count_words$n, 
+          min.freq = 1,          # Minimum frequency of words to be included
+          max.words = 100,       # Maximum words to be displayed
+          random.order = FALSE,  # Arrange words based on frequency
+          rot.per = 0.35,    # Proportion of words rotated (35% at 90 degrees)
+          colors = brewer.pal(8, "Dark2")) # Color palette
+
+dev.off() 
+
+
+
+```
+
+## Common methods of treating disease 
+
+
+```{r}
+# sub setting common treatment within the disease management data set
+animal_treatment <- disease_management %>% 
+                  select(
+                    starts_with("how_do_you_usually") & # select var. with how
+                    - ends_with(c ("other_specify","all_that_apply") #         removing variables end with others and all that apply
+                  ))
+
+
+# Convert all variables from 0="No", 1= "Yes"
+
+animal_treatment<- animal_treatment %>% 
+   mutate(across(everything(), ~ ifelse(. == 1, "Yes", "No")))
+
+
+animal_treatment<- animal_treatment %>% 
+  pivot_longer(
+    cols = 1:4, 
+    names_to = "Category"
+  ) %>% 
+  drop_na(value) %>% 
+  group_by(
+    Category, 
+    value
+  ) %>% 
+  summarise(freq.=n())
+
+# replace the phase "how_do..._" with space 
+animal_treatment$Category<- gsub("how_do_you_usually_treat_these_diseases_select_all_that_apply_",
+     " " ,
+     animal_treatment$Category)
+
+# replacing _ with space
+animal_treatment$Category<- gsub("_", " " , animal_treatment$Category)
+
+# restructuring the data set for plot a stock bar chart 
+animal_treatment<- animal_treatment %>% 
+  pivot_wider(
+    names_from = value, 
+    values_from = freq.
+  ) %>% 
+  mutate(
+    total=round(
+      No+Yes
+    ), 
+    Yes=round(
+      Yes/total*100, 2
+    ), 
+    No=round(
+      No/total*100,2
+    )
+  ) %>% 
+  select(
+    Category, 
+    Yes, 
+    No
+        ) %>% 
+  pivot_longer(
+    cols = -1, 
+    
+  )
+
+# creating a chart 
+
+treatment_plot<-animal_treatment %>% 
+  ggplot( aes(x=Category, y= value, fill = name))+
+  coord_flip()+
+  geom_col()+
+  theme_minimal()+
+  theme(axis.text.x = element_text(
+    angle = 0, size = 8, colour = "black"
+  ))+
+  geom_text(  aes(
+           x=Category, y=value, 
+           label = value))+
+  labs(
+    y="Percentage", 
+    title = "Methods how Animal Disease are Treated "
+  )
+
+
+# saving the image 
+ggsave(filename = "treatment_plot.png", plot = treatment_plot,
+       path = "output", bg="white", dpi = 300)
+
+```
+
+## Vaccinate uage 
+
+```{r}
+vaccine <-disease_management %>% 
+          select(
+            are_vaccines_used_on_your_farm
+          ) 
+
+
+vaccine_pie<- vaccine %>% 
+   group_by(are_vaccines_used_on_your_farm) %>% 
+   count(vaccine$are_vaccines_used_on_your_farm)%>%
+   drop_na(are_vaccines_used_on_your_farm) %>% 
+  summarise(count=n/n()) %>% 
+  mutate(precent=  round(count/sum(count)*100, 3)) %>% 
+  select(-count) %>% 
+  rename(
+    "vacination_used"=are_vaccines_used_on_your_farm
+  )
+
+
+# restructing the data set for pie chart
+vaccine_pie2<- vaccine_pie %>% 
+mutate(csum = rev(cumsum(rev(precent))),
+        pos = precent/2 + lead(csum, 1),
+        pos = if_else(is.na(pos), precent/2, pos))
+
+# plotting the pie chart
+pie_chart<- ggplot(vaccine_pie2, aes(x = "", y = precent,
+        fill = vacination_used)) + 
+      geom_bar(stat="identity",color=1) + 
+      coord_polar(theta="y",start=0) + 
+      scale_fill_brewer() + 
+      ggtitle("Vaccine Usegd at Farm") + 
+      guides(fill=guide_legend(title="Vaccine used")) + 
+       geom_text(aes(label = paste0(round(precent, 1), "%"), 
+       y = pos), color = "black", size = 5)+
+      theme_void() + theme(legend.position="right")
+
+
+# saving the pie chart 
+ggsave(plot = pie_chart, path = here("output"), 
+       filename ="pie_chart.png")
+
+```
+
+
+## Knowledge and awareness of antimicrobial resistance 
+
+
 
