@@ -1,5 +1,5 @@
 ---
-title: "Analysis"
+title: "Analysis of the AMU data"
 output:
   html_document:
     df_print: paged
@@ -595,7 +595,7 @@ pie_chart<- ggplot(vaccine_pie2, aes(x = "", y = precent,
       geom_bar(stat="identity",color=1) + 
       coord_polar(theta="y",start=0) + 
       scale_fill_brewer() + 
-      ggtitle("Vaccine Usegd at Farm") + 
+      ggtitle("Is Vaccine Use at Farm") + 
       guides(fill=guide_legend(title="Vaccine used")) + 
        geom_text(aes(label = paste0(round(precent, 1), "%"), 
        y = pos), color = "black", size = 5)+
@@ -610,6 +610,169 @@ ggsave(plot = pie_chart, path = here("output"),
 
 
 ## Knowledge and awareness of antimicrobial resistance 
+### awareness of amr
 
+```{r}
+knowledge_awareness<-amu_data%>% 
+              select(
+                112:137
+              ) 
+
+awareness_amr <- knowledge_awareness %>% 
+         select( have_you_heard_of_amr)
+
+
+amr_pie<- awareness_amr %>% 
+   group_by(have_you_heard_of_amr) %>% 
+   count(have_you_heard_of_amr)%>%
+   drop_na(have_you_heard_of_amr) %>% 
+  summarise(count=n/n()) %>% 
+  mutate(precent=  round(count/sum(count)*100, 3)) %>% 
+  select(-count) %>% 
+  rename(
+    "Awareness of AMR"=have_you_heard_of_amr
+  )
+
+
+
+
+# restructing the data set for pie chart
+amr_pie<- amr_pie %>% 
+mutate(csum = rev(cumsum(rev(precent))),
+        pos = precent/2 + lead(csum, 1),
+        pos = if_else(is.na(pos), precent/2, pos))
+
+
+# plotting the pie chart
+AMR_chart<- ggplot(amr_pie, aes(x = "", y = precent,
+        fill = `Awareness of AMR`)) + 
+      geom_bar(stat="identity",color=1) + 
+      coord_polar(theta="y",start=0) + 
+      scale_fill_brewer() + 
+      ggtitle("Awareness of AMR") + 
+      guides(fill=guide_legend(title="AMR")) + 
+       geom_text(aes(label = paste0(round(precent, 1), "%"), 
+       y = pos), color = "black", size = 5)+
+      theme_void() + theme(legend.position="right")
+
+
+# saving the pie chart 
+ggsave(plot =AMR_chart, path = here("output"), 
+       filename ="AMR_chart.png")
+
+
+
+```
+
+### AMR policy, and training. 
+
+```{r}
+# sub setting awareness of policy and training status on AMR
+amr_policy_training <- knowledge_awareness %>% 
+      select(
+        c(3, 5, 7, 8, 9, 12, 14),17:23 
+      )
+
+amr_policy_training<- amr_policy_training %>% 
+  mutate(across(-c(1,2,6,7), ~ ifelse(. == 1, "Yes", "No")))
+
+
+amr_policy_training<- amr_policy_training %>% 
+  pivot_longer(
+    cols = 1:14, 
+    names_to = "Category"
+  ) %>% 
+  drop_na(value) %>% 
+  group_by(
+    Category, 
+    value
+  ) %>% 
+  summarise(freq.=n())
+
+
+# replace the phase "if_yes_..._" with space 
+amr_policy_training$Category<- gsub("if_yes_who_provides_this_",
+     " " ,
+     amr_policy_training$Category)
+
+
+
+# replace _ with space 
+amr_policy_training$Category<- gsub("_",
+     " " ,
+     amr_policy_training$Category)
+
+
+# restructuring the data set for plot a stock bar chart 
+amr_policy_training<- amr_policy_training %>% 
+  pivot_wider(
+    names_from = value, 
+    values_from = freq.
+  ) %>% 
+  mutate(
+    total=round(
+      No+Yes
+    ), 
+    Yes=round(
+      Yes/total*100, 2
+    ), 
+    No=round(
+      No/total*100,2
+    )
+  ) %>% 
+  select(
+    Category, 
+    Yes, 
+    No
+        ) %>% 
+  pivot_longer(
+    cols = -1, 
+    
+  )
+
+
+# recoding the values of the category 
+amr_policy_training<-amr_policy_training%>% 
+  mutate(Category= recode(
+    Category, 
+    "are you aware of any guidelines or regulations on antimicrobial use in livestock"= "Awareness of Guideline/Regulation on Antimicrobial", 
+  "do you receive any training or advice on responsible antimicrobial use"= "Trained or Adviced on Antimicrobial", 
+  " training friends through some discussions"="Trained on AMR by Friends",
+  " training government through veterinarians"= "Trained by Government Veterianrians", 
+  " training ngo"= "Trained on AMR by NGO"
+  ))
+
+
+# plotting stock bar chart 
+
+amr_policy_plot<-amr_policy_training%>% 
+  dplyr::rename(
+    "Response"=name
+  ) %>% 
+  ggplot( aes(x=Category, y= value, fill = Response))+
+  coord_flip()+
+  geom_col()+
+  theme_minimal()+
+  theme(axis.text.x = element_text(
+    angle = 0, size = 12, colour = "black" ), 
+    axis.text.y = element_text(
+      size = 13, colour = "black" 
+    ))+
+  geom_text(  aes(
+           x=Category, y=value, 
+           label = value))+
+  labs(
+    y="Percentage", 
+    title = "Awareness of AMR Policy and AMR training "
+  )
+
+
+# saving the image 
+ggsave(filename = "amr_policy_plot.png", plot = amr_policy_plot,
+       path = "output", bg="white", dpi = 300)
+
+
+
+```
 
 
