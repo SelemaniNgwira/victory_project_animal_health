@@ -144,3 +144,309 @@ ggsave(filename = "pres_usage_plot.png",
 
 ```
 
+## Awareness of policies and institutions
+are_you_aware_of_the_institutions_that_govern_drug_use
+are_you_aware_of_any_policies_governing_drug_use_storage_handling
+where_did_you_get_this_information_from
+do_you_think_that_the_existing_policies_are_effective
+if_no_what_should_be_done
+
+
+```{r}
+# Awareness of the policies 
+awareness_of_policies <- drug_value_data %>% 
+              select(331, 333, 336:338, 340,341, 343) 
+
+# re-coding all the value indicate 1 to Yes, and 0 to No exclude column with yes, and no values
+awareness_of_policies<-awareness_of_policies %>% 
+  mutate(across(-c(8,7, 1,2), ~if_else(.== 1, "Yes", "No")))
+
+# calculating row percentage 
+awareness_of_policies<- awareness_of_policies %>% 
+  pivot_longer(
+    cols = 1:8, 
+    names_to = "Category"
+  ) %>% 
+  drop_na(value) %>% 
+  group_by(Category, value) %>% 
+  summarise(freq.=n()) %>% 
+  pivot_wider(
+    names_from = value, 
+    values_from = freq.) %>% 
+  mutate( total=round( No+Yes),
+          Yes=round(Yes/total*100, 2), 
+          No=round(No/total*100, 2)) %>% 
+  select(Category, Yes, No) %>% 
+  pivot_longer(
+    cols = -Category
+  ) 
+  
+# recoding values within the category variable      
+awareness_of_policies<- awareness_of_policies %>% 
+  mutate(Category =recode(
+    Category, 
+      "are_you_aware_of_the_institutions_that_govern_drug_use_331"=
+      "Aware of the institution that govern drug use", 
+      "do_you_think_that_the_existing_policies_are_effective_343"=
+      "The existing policies are effective", 
+      "where_did_you_get_this_information_from_background_training_338" = 
+      "I get the information from background training",
+      "where_did_you_get_this_information_from_education_training_340"= 
+      "I get the information from Education training", 
+      "where_did_you_get_this_information_from_internet_press_336"= 
+      "I get the information from internet press", 
+      "where_did_you_get_this_information_from_workshops_trainings_337"=
+      "I get the information from Workshop", 
+      "are_there_existing_channels_for_information_sharing_between_you_and_the_institutions_341"= 
+      "Existing channels for information sharing between a farmer and institutions ", 
+   "are_you_aware_of_any_policies_governing_drug_use_storage_handling_333"=
+   "Awareness of policies governing drug use, storage and handling"
+    ))
+
+awareness_of_policies$Category <- str_wrap(awareness_of_policies$Category, 
+                                           width = 40)
+
+
+# plotting a chart
+
+awareness_of_policies_plot<- awareness_of_policies %>% 
+    dplyr::rename("Response"=name) %>% 
+  ggplot( aes(x=Category, y= value, fill = Response))+
+  coord_flip()+
+  geom_col()+
+  theme_minimal()+
+  theme(axis.text.x = element_text(
+    angle = 0, size = 8, colour = "black" ), 
+    axis.text.y = element_text(
+      size = 13, colour = "black" 
+    ))+
+  geom_text(
+    aes(label = value),  # Show actual percentage
+    position = position_stack(vjust = 0.5),  # Center text inside bars
+    color = "black",  # Ensure visibility inside bars
+    size = 4
+  ) +
+  scale_fill_manual(values = c("Yes" = "skyblue", "No" = "tomato")) +  # Set fill colors
+  labs(y = "Percentage", title = "Awareness of Policies")
+
+
+# saving the image 
+ggsave(filename = "awareness_of_policies_plot.png", 
+       plot = awareness_of_policies_plot,
+       path = "output", bg="white", dpi = 300, width = 10, height = 6)
+
+
+
+
+```
+
+## Ways of making policies effective
+
+
+```{r}
+
+
+# creating a subset of data set
+ways_of_policies_effective<-drug_value_data %>% 
+                           select(345:347)
+
+ways_of_policies_effective<-ways_of_policies_effective %>% 
+  mutate(across(everything(), ~if_else(. ==1, "Yes", "No")))
+
+
+ways_of_policies_effective<- ways_of_policies_effective %>% 
+  pivot_longer(
+    cols = 1:3, 
+    names_to = "Category"
+  ) %>% 
+  drop_na(value) %>% 
+  group_by(Category, value) %>% 
+  summarise(freq.=n()) %>% 
+  pivot_wider(
+    names_from = value, 
+    values_from = freq.) %>% 
+  mutate(total=round(No+Yes), 
+         Yes=round(Yes/total*100, 2), 
+         No=round(No/total*100, 2)) %>% 
+  select(Category, Yes, No) %>% 
+  pivot_longer(
+    cols = -Category
+  )
+  
+ways_of_policies_effective$Category <- gsub("if_no_what_do_you_think_can_be_done_to_make_them_more_effective_", 
+     "",ways_of_policies_effective$Category)
+
+ways_of_policies_effective$Category <- gsub("_", 
+     " ",ways_of_policies_effective$Category)
+
+## plotting the chart
+
+ways_of_policies_plot<- ways_of_policies_effective %>% 
+    dplyr::rename("Response"=name) %>% 
+  ggplot( aes(x=Category, y= value, fill = Response))+
+  coord_flip()+
+  geom_col()+
+  theme_minimal()+
+  theme(axis.text.x = element_text(
+    angle = 0, size = 8, colour = "black" ), 
+    axis.text.y = element_text(
+      size = 13, colour = "black" 
+    ))+
+  geom_text(
+    aes(label = value),  # Show actual percentage
+    position = position_stack(vjust = 0.5),  # Center text inside bars
+    color = "black",  # Ensure visibility inside bars
+    size = 4) +
+  scale_fill_manual(values = c("Yes" = "skyblue", "No" = "tomato")) +  # Set fill colors
+  labs(y = "Percentage", title = "Way of Improve Awareness of Policies")
+
+
+
+# saving the image 
+ggsave(filename = "ways_of_policies_plot.png", 
+       plot = ways_of_policies_plot,
+       path = "output", bg="white", dpi = 300)
+
+```
+
+
+
+Dumbbell Chart
+Shows the gap between "Yes" and "No
+
+```{r}
+
+# 
+# ggplot(ways_of_policies_effective, aes(x = Category, y = value, color = name)) +
+#   geom_point(size = 5) +
+#   geom_line(aes(group = Category), size = 1) +
+#   coord_flip() +
+#   theme_minimal() +
+#   scale_color_manual(values = c("Yes" = "skyblue", "No" = "tomato")) +
+#   labs(y = "Percentage", title = "Way of Improve Awareness of Policies")
+
+
+```
+
+
+ Lollipop Chart
+Emphasizes values with points and lines
+
+```{r}
+# 
+# 
+# ggplot(ways_of_policies_effective, aes(x = Category, y = value, color = name)) +
+#   geom_segment(aes(xend = Category, y = 0, yend = value), size = 1) +
+#   geom_point(size = 5) +
+#   coord_flip() +
+#   theme_minimal() +
+#   scale_color_manual(values = c("Yes" = "skyblue", "No" = "tomato")) +
+#   labs(y = "Percentage", title = "Way of Improve Awareness of Policies")
+
+```
+
+
+Transform "No" values to negative for a clear contrast
+
+```{r}
+# 
+# ways_of_policies_effective2 <- ways_of_policies_effective %>%
+#   mutate(value = ifelse(name == "No", -value, value))
+# 
+# ggplot(ways_of_policies_effective2, aes(x = Category, y = value, fill = name)) +
+#   geom_col() +
+#   coord_flip() +
+#   theme_minimal() +
+#   scale_fill_manual(values = c("Yes" = "skyblue", "No" = "tomato")) +
+#   labs(y = "Percentage", title = "Way of Improve Awareness of Policies") +
+#   geom_text(aes(label = abs(value)), position = position_stack(vjust = 0.5))
+
+
+```
+
+
+Dodge Bar Chart with Percent Labels
+Like the grouped bar chart but with labels:
+
+```{r}
+
+# 
+# ggplot(ways_of_policies_effective, aes(x = Category, y = value, fill = name)) +
+#   geom_col(position = position_dodge(width = 0.8)) +
+#   geom_text(aes(label = value), position = position_dodge(width = 0.8), vjust = -0.5) +
+#   coord_flip() +
+#   theme_minimal() +
+#   scale_fill_manual(values = c("Yes" = "skyblue", "No" = "tomato")) +
+#   labs(y = "Percentage", title = "Way of Improve Awareness of Policies")
+
+```
+
+
+## Stakeholder Engagement
+
+dis_attend_any_stakeholder_meetings_the_last_6_months
+if_yes_who_were_the_organizers
+which_other_stakeholders_attend_such_meetings
+if_you_dont_attend_why
+
+```{r}
+
+stakeholder_engagement <- drug_value_data %>% 
+        select(349, 353)
+
+stakeholder_engagement<- stakeholder_engagement %>% 
+  pivot_longer(
+    cols = 1:2, 
+    names_to = "Category"
+  ) %>% 
+  drop_na(value) %>% 
+  group_by(Category, value) %>% 
+  summarise(freq.=n()) %>% 
+  pivot_wider(
+    names_from = value, 
+    values_from = freq.) %>% 
+  mutate(total=round(No+Yes), 
+         Yes=round(Yes/total*100,2), 
+         No=round(No/total*100, 2)) %>% 
+  select(Category, Yes, No) %>% 
+  pivot_longer(
+    cols = -Category
+  ) %>% 
+  mutate(Category =recode(
+    Category, 
+    "do_you_attend_any_stakeholder_meetings_349"="Attended any Stakehodler meeting", 
+  "do_you_think_there_is_sufficient_interaction_between_you_and_the_regulating_bodies_353"="Interaction between you and Regulating bodies"
+  ))
+
+
+
+# # plotting a pie chart 
+# 
+# library(ggplot2)
+# library(dplyr)
+# library(scales)  # For percentage formatting
+
+# Create the pie chart
+stakeholder_plot<- ggplot(stakeholder_engagement, aes(x = "", y = value, fill = name)) +
+  geom_bar(stat = "identity", width = 1, color = "white") +  # White borders for clarity
+  coord_polar(theta = "y") +  # Convert to pie chart
+  facet_wrap(~ Category) +  # Separate pies for each category
+  theme_void() +  # Remove unnecessary chart elements
+  geom_text(aes(label = paste0(round(value, 1), "%")), 
+            position = position_stack(vjust = 0.5), size = 5, color = "black") +  # Add labels inside the pie
+  scale_fill_manual(values = c("Yes" = "skyblue", "No" = "tomato")) +
+  labs(title = "Stakeholder Engagement ")
+
+
+# saving the image 
+ggsave(filename = "stakeholder_plot.png", 
+       plot = stakeholder_plot,
+       path = "output", bg="white", dpi = 300)
+
+
+
+
+```
+
+
+

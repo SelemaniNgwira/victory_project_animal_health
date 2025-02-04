@@ -131,7 +131,7 @@ table_number_livestoct<-number_livestoct %>%
 table1_livestock<-amu_data %>% 
   select(c(37:39))
 
-# creating a table on number of years in expereience of keeoing livestock
+# creating a table on number of years in expereience of keeping livestock
 table1_livestock<- table1_livestock %>% 
                        tbl_summary()
 
