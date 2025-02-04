@@ -15,8 +15,7 @@ knitr::opts_chunk$set(echo = TRUE, results = "hold")
 if(!require(pacman)) install.packages("pacman")
 p_load(
   rio, tidyverse, janitor, here, epitools, epikit, visdat, inspectdf, gtsummary, 
-  tmaptools, tmap, sf, flextable, officer
-)
+  tmaptools, tmap, sf, flextable, officer, pwr)
 
 
 # packages for qauilative analysis in R
@@ -36,7 +35,7 @@ amu_data<-clean_names(amu_data)
 amu_data<- amu_data %>% 
   mutate(across(where(is.character), as.factor))
 
-options(flextable.print = "full")
+
 
 
 
@@ -731,6 +730,9 @@ amr_policy_training<- amr_policy_training %>%
   )
 
 
+
+
+
 # recoding the values of the category 
 amr_policy_training<-amr_policy_training%>% 
   mutate(Category= recode(
@@ -738,15 +740,22 @@ amr_policy_training<-amr_policy_training%>%
     "are you aware of any guidelines or regulations on antimicrobial use in livestock"= "Awareness of Guideline/Regulation on Antimicrobial", 
   "do you receive any training or advice on responsible antimicrobial use"= "Trained or Adviced on Antimicrobial", 
   " training friends through some discussions"="Trained on AMR by Friends",
-  " training government through veterinarians"= "Trained by Government Veterianrians", 
-  " training ngo"= "Trained on AMR by NGO"
+  " training government through veterinarians"= "Trained on AMR by Government Veterianrians", 
+  " training ngo"= "Trained on AMR by NGO", 
+  "do you think these policies are effective"= "Do you think AMR policies are effective ", 
+  "are you aware of any national policies or strategies addressing amu and amr"= " Awareness of National AMR Policies/Strategies"
+  
   ))
+
+
 
 
 # plotting stock bar chart 
 
 amr_policy_plot<-amr_policy_training%>% 
-  dplyr::rename(
+  mutate(across(where(is.character), as.factor)) %>%
+filter(!str_detect(as.character(Category), "recommendations"))%>% 
+    dplyr::rename(
     "Response"=name
   ) %>% 
   ggplot( aes(x=Category, y= value, fill = Response))+
@@ -763,7 +772,7 @@ amr_policy_plot<-amr_policy_training%>%
            label = value))+
   labs(
     y="Percentage", 
-    title = "Awareness of AMR Policy and AMR training "
+  title= "Awareness and Training on AMR policies and Strategies"
   )
 
 
@@ -775,4 +784,46 @@ ggsave(filename = "amr_policy_plot.png", plot = amr_policy_plot,
 
 ```
 
+## Recommendation on AMR polices and Strategies 
+
+```{r}
+
+
+recommendation_on_arm<- amr_policy_training%>% 
+  mutate(across(where(is.character), as.factor)) %>%
+filter(str_detect(as.character(Category), "recommendations"))
+
+
+
+recommendation_on_arm$Category<- gsub("what recommendations would you suggest to improve the regulation and monitoring of amu in livestock", " ", recommendation_on_arm$Category)
+
+
+recommendation_plot<- recommendation_on_arm %>% 
+    dplyr::rename("Response"=name) %>% 
+  ggplot( aes(x=Category, y= value, fill = Response))+
+  coord_flip()+
+  geom_col()+
+  theme_minimal()+
+  theme(axis.text.x = element_text(
+    angle = 0, size = 12, colour = "black" ), 
+    axis.text.y = element_text(
+      size = 13, colour = "black" 
+    ))+
+  geom_text(  aes(
+           x=Category, y=value, 
+           label = value))+
+  labs(
+    y="Percentage", 
+  title= "Recommendation to Improving and Strength AMR" )
+
+
+# saving the image 
+ggsave(filename = "recommendation_plot.png", 
+       plot = recommendation_plot,
+       path = "output", bg="white", dpi = 300)
+
+
+
+
+```
 

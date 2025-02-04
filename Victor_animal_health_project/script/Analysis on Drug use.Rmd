@@ -1,0 +1,146 @@
+---
+title: "Analysis on Drug use"
+output: html_document
+---
+
+```{r}
+
+# setting the global setting of the chuck within this rmarkdown
+knitr::opts_chunk$set(echo = TRUE, results = "hold")
+
+
+# loading package required for this analysis 
+if(!require(pacman)) install.packages("pacman")
+p_load(
+  rio, tidyverse, janitor, here, epitools, epikit, visdat, inspectdf, gtsummary, 
+  tmaptools, tmap, sf, flextable, officer, pwr, tm, tidytext, wordcloud, plotly
+  )
+
+
+
+# loading data sets.
+drug_value_data<-import(here("data/drug_value_chain.xlsx"))
+
+# clean the variable names to lower cases
+drug_value_data<-clean_names(drug_value_data)
+
+# changing the characters to factors 
+drug_value_data<- drug_value_data %>% 
+  mutate(across(where(is.character), as.factor))
+
+# chaning the data frame to tibble table
+drug_value_data <- as_tibble(drug_value_data)
+
+
+```
+
+# Prescription and Usage Patterns
+The following are variable to be analyzed under this sections: 
+
+  
+1. Receives Advice on Use?=	are_you_given_any_advice_on_their_use
+2.Type of Advice Given=	if_yes_what_kind_of_advice
+3.Buying Method=	what_is_the_most_frequent_way_of_buying_the_drugs
+4.Action if Drug Fails=	if_you_buy_a_drug_and_it_does_not_work_what_do_you_do
+
+```{r}
+# sub-setting data of prescription and drug usage pattern 
+pres_and_usage_patterns<-drug_value_data %>% 
+  select(
+    are_you_given_any_advice_on_their_use, 
+    if_yes_what_kind_of_advice_dosage, 
+    if_yes_what_kind_of_advice_duration_for_use,
+    if_yes_what_kind_of_advice_route_of_administration, 
+    if_yes_what_kind_of_advice_withdrawal_period,
+    do_you_prescribe_drugs_to_healthy_animals_as_a_form_of_prophylaxis_315,
+    if_yes_to_which_clients_poultry_farmers, 
+    if_yes_to_which_clients_beef, 
+    if_yes_to_which_clients_dairy_farmers, 
+    if_yes_to_which_clients_pig_farmers )
+
+
+
+pres_and_usage_patterns<-pres_and_usage_patterns %>% 
+                       mutate(across(-c(1,6), ~if_else(.== 1, "Yes", "No")))
+
+
+# calculating the percentage by row of the values.
+pres_and_usage_patterns<- pres_and_usage_patterns %>% 
+       pivot_longer(
+         cols = 1:10, 
+         names_to = "Category"
+       ) %>% 
+  drop_na(value) %>% 
+  group_by(Category, value) %>% 
+  summarise(freq.=n()) %>% 
+  pivot_wider(
+    values_from = freq., 
+    names_from = value
+  ) %>% 
+  mutate(
+    total=round(
+      No+Yes
+    ), 
+    Yes=round(
+      Yes/total*100, 2
+    ), 
+    No=round(
+      No/total*100, 2
+    )
+  ) %>% 
+  select(
+    Category, Yes, No
+  ) %>% 
+  pivot_longer(
+    cols = -Category
+  )
+
+
+# plotting chart of drug use and patterns 
+
+pres_and_usage_patterns$Category <- gsub("_", " ", 
+                                pres_and_usage_patterns$Category)
+
+
+
+pres_and_usage_patterns$Category <- gsub("if yes to which clients",
+                                         "prescribe drugs to", 
+                                pres_and_usage_patterns$Category)
+
+
+pres_and_usage_patterns$Category <- gsub("if yes what",
+                                         " ", 
+                                pres_and_usage_patterns$Category)
+
+
+# Plotting the bar chart. 
+pres_usage_plot<- pres_and_usage_patterns %>% 
+    dplyr::rename("Response"=name) %>% 
+  ggplot( aes(x=Category, y= value, fill = Response))+
+  coord_flip()+
+  geom_col()+
+  theme_minimal()+
+  theme(axis.text.x = element_text(
+    angle = 0, size = 12, colour = "black" ), 
+    axis.text.y = element_text(
+      size = 13, colour = "black" 
+    ))+
+  geom_text(  aes(
+           x=Category, y=value, 
+           label = value),hjust =0 , vjust = 0.9  
+            )+
+  labs(
+    y="Percentage", 
+  title= "Prescription and Usage Patterns" )
+
+
+# saving the image 
+ggsave(filename = "pres_usage_plot.png", 
+       plot = pres_usage_plot,
+       path = "output", bg="white", dpi = 300)
+
+
+
+
+```
+
