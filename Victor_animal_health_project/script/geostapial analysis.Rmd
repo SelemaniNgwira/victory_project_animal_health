@@ -1,0 +1,84 @@
+---
+title: "geostapial analysis"
+output: html_document
+---
+
+```{r}
+
+# loading package required for this analysis 
+if(!require(pacman)) install.packages("pacman")
+p_load(
+  rio, tidyverse, janitor, here, epitools, epikit, visdat, inspectdf, gtsummary, 
+  tmaptools, tmap, sf, flextable, officer, pwr, tm, tidytext, wordcloud, plotly
+  )
+
+```
+
+# loading the data
+
+```{r}
+# loading data set
+geostapial_data<-import("data/Final_of_AMU_2.xlsx") %>%
+                       clean_names() %>% 
+                      select(diseases_of_poultry_currently_on_the_farm, 
+                             latitude, 
+                             longitude) %>% 
+                             drop_na(latitude) %>% 
+                             drop_na(diseases_of_poultry_currently_on_the_farm)
+
+
+
+# change the name to low case
+geostapial_data$diseases_of_poultry_currently_on_the_farm <- str_to_lower(
+ geostapial_data$diseases_of_poultry_currently_on_the_farm 
+)
+
+
+geostapial_data$diseases_of_poultry_currently_on_the_farm <- str_wrap(
+  geostapial_data$diseases_of_poultry_currently_on_the_farm, width = 50
+)
+
+
+# creating geo point geometry
+geostapial_sf<- geostapial_data %>% 
+  sf::st_as_sf(coords=  c("longitude", "latitude"), 
+               crs=4326)
+
+
+
+
+#loading shape file
+
+district_sf <- st_read("data/Admin2.shp") %>% 
+                clean_names() %>% 
+                select(district)
+
+
+
+bbox <- st_bbox(district_sf) # to get bounders 
+strected_bbox <- bbox+c(-2.4, -0.09, 2.4, 0.09)
+
+
+disease_map <- tm_shape(district_sf, bbox = strected_bbox) +
+  tm_borders(col = "black", lwd = 1) +
+  tm_polygons(col = "white") +
+  tm_text("district", size = 0.8) +
+tm_shape(geostapial_sf) +
+  tm_symbols(size = 1, col = "diseases_of_poultry_currently_on_the_farm", 
+             shape = "diseases_of_poultry_currently_on_the_farm",
+             title.col = "Common Poultry Disease", 
+             title.shape = "Disease Type") +
+  tm_layout(frame = TRUE, 
+            legend.position = c("left", "bottom"), 
+            bg.color = "white", 
+            legend.text.size = 0.9, 
+            legend.title.size = 0.9)
+
+
+tmap_save(disease_map, filename = here("output/Poultyr_disease_map.png"), 
+          width = 16, height = 8, dpi = 300)
+
+```
+
+
+
